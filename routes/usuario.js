@@ -2,6 +2,10 @@ var express = require("express");
 
 var app = express();
 var bcrypt = require("bcryptjs");
+var jwt = require("jsonwebtoken");
+var SEED = require("../config/congif").SEED;
+
+var mdAutenticacion = require('../middlewares/autenticacion')
 
 var Usuario = require("../models/usuario");
 
@@ -26,11 +30,12 @@ app.get("/", (req, res) => {
   });
 });
 
+
 //==================================================
 // Actualizar usuario
 //==================================================
 
-app.put("/:id", (req, res) => {
+app.put("/:id", mdAutenticacion.verificaToken, (req, res) => {
   var id = req.params.id;
 
   var body = req.body;
@@ -65,7 +70,7 @@ app.put("/:id", (req, res) => {
         });
       }
 
-      usuarioGuardado.password = ':)';
+      usuarioGuardado.password = ":)";
 
       res.status(200).json({
         ok: true,
@@ -79,7 +84,7 @@ app.put("/:id", (req, res) => {
 // Crear un nuevo usuario
 //==================================================
 
-app.post("/", (req, res) => {
+app.post("/", mdAutenticacion.verificaToken, (req, res) => {
   var body = req.body;
 
   var usuario = new Usuario({
@@ -101,21 +106,20 @@ app.post("/", (req, res) => {
 
     res.status(201).json({
       ok: true,
-      usuario: usuarioGuardado
+      usuario: usuarioGuardado,
+      usuariotoken: req.usuario
     });
+
   });
 });
-
 
 //==================================================
 // Borrar un usuario por el id
 //==================================================
-app.delete("/:id", (req, res) => {
-
+app.delete("/:id", mdAutenticacion.verificaToken, (req, res) => {
   var id = req.params.id;
 
-  Usuario.findByIdAndRemove(id, (err, usuarioBorrado)=>{
-
+  Usuario.findByIdAndRemove(id, (err, usuarioBorrado) => {
     if (err) {
       return res.status(500).json({
         ok: false,
@@ -128,7 +132,7 @@ app.delete("/:id", (req, res) => {
       return res.status(400).json({
         ok: false,
         mensaje: "No existe un usuario con ese id",
-        errors: {message: 'No existe un usuario con ese id'}
+        errors: { message: "No existe un usuario con ese id" }
       });
     }
 
@@ -136,11 +140,7 @@ app.delete("/:id", (req, res) => {
       ok: true,
       usuario: usuarioBorrado
     });
-
-
   });
-  
 });
-
 
 module.exports = app;
