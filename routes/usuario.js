@@ -5,7 +5,7 @@ var bcrypt = require("bcryptjs");
 var jwt = require("jsonwebtoken");
 var SEED = require("../config/congif").SEED;
 
-var mdAutenticacion = require('../middlewares/autenticacion')
+var mdAutenticacion = require("../middlewares/autenticacion");
 
 var Usuario = require("../models/usuario");
 
@@ -14,22 +14,31 @@ var Usuario = require("../models/usuario");
 //==================================================
 
 app.get("/", (req, res) => {
-  Usuario.find({}, "nombre email img role").exec((err, usuarios) => {
-    if (err) {
-      return res.status(500).json({
-        ok: false,
-        mensaje: "Error cargando usuarios",
-        errors: err
+  var desde = req.query.desde || 0;
+  desde = Number(desde);
+
+  Usuario.find({}, "nombre email img role")
+    .skip(desde)
+    .limit(5)
+    .exec((err, usuarios) => {
+      if (err) {
+        return res.status(500).json({
+          ok: false,
+          mensaje: "Error cargando usuarios",
+          errors: err
+        });
+      }
+
+      Usuario.count({}, (err, conteo) => {
+        res.status(200).json({
+          ok: true,
+          usuarios: usuarios,
+          total: conteo
+        });
       });
-    }
-
-    res.status(200).json({
-      ok: true,
-      usuarios: usuarios
+      
     });
-  });
 });
-
 
 //==================================================
 // Actualizar usuario
@@ -109,7 +118,6 @@ app.post("/", mdAutenticacion.verificaToken, (req, res) => {
       usuario: usuarioGuardado,
       usuariotoken: req.usuario
     });
-
   });
 });
 

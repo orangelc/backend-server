@@ -2,7 +2,7 @@ var express = require("express");
 
 var app = express();
 
-var mdAutenticacion = require('../middlewares/autenticacion')
+var mdAutenticacion = require("../middlewares/autenticacion");
 
 var Medico = require("../models/medico");
 
@@ -11,22 +11,32 @@ var Medico = require("../models/medico");
 //==================================================
 
 app.get("/", (req, res) => {
-  Medico.find({}).exec((err, medicos) => {
-    if (err) {
-      return res.status(500).json({
-        ok: false,
-        mensaje: "Error cargando medicos",
-        errors: err
+  var desde = req.query.desde || 0;
+  desde = Number(desde);
+
+  Medico.find({})
+    .skip(desde)
+    .limit(5)
+    .populate("usuario", "nombre email")
+    .populate("hospital")
+    .exec((err, medicos) => {
+      if (err) {
+        return res.status(500).json({
+          ok: false,
+          mensaje: "Error cargando medicos",
+          errors: err
+        });
+      }
+
+      Medico.count({}, (err, conteo) => {
+        res.status(200).json({
+          ok: true,
+          medicos: medicos,
+          total: conteo
+        });
       });
-    }
-
-    res.status(200).json({
-      ok: true,
-      medicos: medicos
     });
-  });
 });
-
 
 //==================================================
 // Actualizar medico
@@ -104,7 +114,6 @@ app.post("/", mdAutenticacion.verificaToken, (req, res) => {
       ok: true,
       medico: medicoGuardado
     });
-
   });
 });
 
